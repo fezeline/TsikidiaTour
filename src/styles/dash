@@ -1,0 +1,498 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Gift, 
+  Calendar, 
+  Star, 
+  MessageSquare, 
+  ChevronRight,
+  MapPin,
+  Clock,
+  Users,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Send,
+  Trash2
+} from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
+
+// Mock Auth Context
+const useAuth = () => ({ 
+  user: { 
+    id: 1, 
+    nom: 'Jean Dupont',
+    email: 'jean.dupont@email.com' 
+  } 
+});
+
+// Mock API calls
+const mockAPI = {
+  getReservations: async (userId) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return [
+      { id: 1, destinationId: 101, destination: 'Parc National Andasibe', dateReservation: '2025-03-15', statut: 'confirmée', nombrePersonnes: 2, prixTotal: 450 },
+      { id: 2, destinationId: 102, destination: 'Allée des Baobabs', dateReservation: '2025-05-20', statut: 'en attente', nombrePersonnes: 4, prixTotal: 890 },
+      { id: 3, destinationId: 103, destination: 'Île Sainte-Marie', dateReservation: '2025-07-10', statut: 'confirmée', nombrePersonnes: 2, prixTotal: 650 },
+      { id: 4, destinationId: 104, destination: 'Tsingy de Bemaraha', dateReservation: '2025-02-25', statut: 'annulée', nombrePersonnes: 3, prixTotal: 720 },
+    ];
+  },
+  getCommentaires: async (userId) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return [
+      { id: 1, destinationId: 101, destination: 'Parc National Andasibe', note: 5, commentaire: 'Expérience exceptionnelle! Les guides étaient très compétents.', dateCreation: '2025-03-20' },
+      { id: 2, destinationId: 103, destination: 'Île Sainte-Marie', note: 4, commentaire: 'Magnifique destination, plages paradisiaques.', dateCreation: '2025-07-15' },
+    ];
+  },
+  getMessages: async (userId) => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return [
+      { id: 1, sujet: 'Confirmation de réservation', contenu: 'Votre réservation pour Andasibe est confirmée.', dateEnvoi: '2025-03-10', lu: true },
+      { id: 2, sujet: 'Offre spéciale été', contenu: 'Profitez de 20% de réduction sur nos circuits côtiers.', dateEnvoi: '2025-06-01', lu: false },
+      { id: 3, sujet: 'Rappel: Voyage à venir', contenu: 'Votre voyage à Sainte-Marie est dans 7 jours.', dateEnvoi: '2025-07-03', lu: true },
+    ];
+  },
+  getDestinations: async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return [
+      { id: 101, nom: 'Parc National Andasibe', region: 'Est', prix: 225 },
+      { id: 102, nom: 'Allée des Baobabs', region: 'Ouest', prix: 220 },
+      { id: 103, nom: 'Île Sainte-Marie', region: 'Est', prix: 325 },
+      { id: 104, nom: 'Tsingy de Bemaraha', region: 'Ouest', prix: 240 },
+    ];
+  }
+};
+
+const Card = ({ children, title, className = '' }) => (
+  <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`}>
+    {title && (
+      <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-white">
+        <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+      </div>
+    )}
+    <div className="p-6">{children}</div>
+  </div>
+);
+
+const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
+  const baseClass = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200';
+  const variants = {
+    primary: 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg',
+    secondary: 'bg-white text-green-600 border-2 border-green-600 hover:bg-green-50',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
+  };
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2 text-base',
+    lg: 'px-6 py-3 text-lg',
+  };
+  
+  return (
+    <button className={`${baseClass} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
+      {children}
+    </button>
+  );
+};
+
+const ClientDashboard = () => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [reservations, setReservations] = useState([]);
+  const [commentaires, setCommentaires] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [destinations, setDestinations] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      const startTime = Date.now();
+      try {
+        const [resData, commData, msgData, destData] = await Promise.all([
+          mockAPI.getReservations(user.id),
+          mockAPI.getCommentaires(user.id),
+          mockAPI.getMessages(user.id),
+          mockAPI.getDestinations(),
+        ]);
+
+        setReservations(resData);
+        setCommentaires(commData);
+        setMessages(msgData);
+        setDestinations(destData);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données :", error);
+      } finally {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, 1500 - elapsed);
+        setTimeout(() => setIsLoading(false), remaining);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  if (!user || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-16 h-16 bg-green-600 rounded-full mb-4 animate-bounce"></div>
+          <div className="h-4 bg-gray-300 rounded w-32 mb-2"></div>
+          <div className="h-4 bg-gray-300 rounded w-40"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Statistiques
+  const reservationStats = Array.from({ length: 12 }, (_, i) => ({
+    mois: new Date(0, i).toLocaleString("fr-FR", { month: "short" }),
+    reservations: reservations.filter(r => new Date(r.dateReservation).getMonth() === i).length,
+    index: i
+  }));
+
+  const statutStats = [
+    { name: 'Confirmées', value: reservations.filter(r => r.statut === 'confirmée').length, color: '#10b981' },
+    { name: 'En attente', value: reservations.filter(r => r.statut === 'en attente').length, color: '#f59e0b' },
+    { name: 'Annulées', value: reservations.filter(r => r.statut === 'annulée').length, color: '#ef4444' },
+  ];
+
+  const filteredReservations = selectedMonth !== null
+    ? reservations.filter(r => new Date(r.dateReservation).getMonth() === selectedMonth)
+    : reservations;
+
+  const messagesNonLus = messages.filter(m => !m.lu).length;
+  const moyenneNotes = commentaires.length > 0 
+    ? (commentaires.reduce((sum, c) => sum + c.note, 0) / commentaires.length).toFixed(1)
+    : 0;
+
+  const getStatutIcon = (statut) => {
+    switch(statut) {
+      case 'confirmée': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'en attente': return <Clock className="w-5 h-5 text-yellow-500" />;
+      case 'annulée': return <XCircle className="w-5 h-5 text-red-500" />;
+      default: return <AlertCircle className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  const getStatutBadge = (statut) => {
+    const styles = {
+      'confirmée': 'bg-green-100 text-green-800',
+      'en attente': 'bg-yellow-100 text-yellow-800',
+      'annulée': 'bg-red-100 text-red-800',
+    };
+    return `px-3 py-1 rounded-full text-xs font-semibold ${styles[statut] || 'bg-gray-100 text-gray-800'}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-12">
+      {/* En-tête */}
+      <div className="relative h-80 bg-gradient-to-br from-green-700 via-green-800 to-emerald-900 overflow-hidden rounded-b-3xl shadow-2xl">
+        <div className="absolute inset-0 bg-black opacity-20"></div>
+        <div className="absolute inset-0" style={{
+          backgroundImage: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%)"
+        }}></div>
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
+          <div className="mb-4 w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl">
+            <span className="text-3xl font-bold text-green-600">{user.nom.charAt(0)}</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
+            Bienvenue, {user.nom} !
+          </h1>
+          <p className="text-green-100 text-lg mb-6">Votre espace de gestion de voyages</p>
+          <Button 
+            variant="secondary" 
+            size="lg"
+            className="group shadow-xl hover:scale-105 transform"
+          >
+            <Gift className="w-5 h-5 mr-2 transition-transform group-hover:rotate-12" />
+            Explorer nos offres exclusives
+            <ChevronRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Onglets */}
+      <div className="container mx-auto px-4 -mt-8 relative z-20">
+        <div className="bg-white rounded-xl shadow-lg p-1.5 flex mb-8">
+          {['overview', 'reservations', 'reviews', 'messages'].map((tab) => (
+            <button
+              key={tab}
+              className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                activeTab === tab 
+                  ? 'bg-green-600 text-white shadow-md transform scale-105' 
+                  : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+              }`}
+              onClick={() => { setActiveTab(tab); setSelectedMonth(null); }}
+            >
+              {tab === 'overview' && '📊 Aperçu'}
+              {tab === 'reservations' && '✈️ Réservations'}
+              {tab === 'reviews' && '⭐ Avis'}
+              {tab === 'messages' && `💬 Messages ${messagesNonLus > 0 ? `(${messagesNonLus})` : ''}`}
+            </button>
+          ))}
+        </div>
+
+        {/* ONGLET APERÇU */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Cartes statistiques */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <Card className="text-center p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-3 bg-blue-100 rounded-full">
+                    <Calendar className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-blue-600 mb-1">{reservations.length}</p>
+                <p className="text-gray-600 text-sm font-medium">Réservations totales</p>
+              </Card>
+
+              <Card className="text-center p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-3 bg-yellow-100 rounded-full">
+                    <Star className="w-6 h-6 text-yellow-500" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-yellow-500 mb-1">{moyenneNotes}</p>
+                <p className="text-gray-600 text-sm font-medium">Note moyenne</p>
+              </Card>
+
+              <Card className="text-center p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-3 bg-green-100 rounded-full">
+                    <MessageSquare className="w-6 h-6 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-green-500 mb-1">{messages.length}</p>
+                <p className="text-gray-600 text-sm font-medium">Messages reçus</p>
+              </Card>
+
+              <Card className="text-center p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="p-3 bg-purple-100 rounded-full">
+                    <MapPin className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-purple-600 mb-1">{destinations.length}</p>
+                <p className="text-gray-600 text-sm font-medium">Destinations disponibles</p>
+              </Card>
+            </div>
+
+            {/* Graphiques */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {reservations.length > 0 && (
+                <Card title="📈 Activité annuelle">
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={reservationStats}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="mois" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                        <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                          cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                        />
+                        <Bar 
+                          dataKey="reservations" 
+                          fill="#10b981" 
+                          radius={[8, 8, 0, 0]} 
+                          onClick={(bar) => {
+                            if ('payload' in bar && bar.payload.index !== undefined) {
+                              setSelectedMonth(bar.payload.index);
+                              setActiveTab('reservations');
+                            }
+                          }}
+                          className="cursor-pointer hover:opacity-80"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              )}
+
+              {statutStats.some(s => s.value > 0) && (
+                <Card title="📊 Statut des réservations">
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statutStats.filter(s => s.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {statutStats.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              )}
+            </div>
+
+          </>
+        )}
+
+        {/* ONGLET RÉSERVATIONS */}
+        {activeTab === 'reservations' && (
+          <Card title="✈️ Mes réservations" className="mb-8">
+            {selectedMonth !== null && (
+              <div className="mb-4 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Filtré pour : <strong className="text-blue-600">{new Date(0, selectedMonth).toLocaleString("fr-FR", { month: "long" })}</strong>
+                </p>
+                <button
+                  onClick={() => setSelectedMonth(null)}
+                  className="px-3 py-1 bg-white rounded-lg text-gray-700 text-sm hover:bg-gray-100 transition shadow-sm"
+                >
+                  Réinitialiser
+                </button>
+              </div>
+            )}
+            <div className="space-y-4">
+              {filteredReservations.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 italic">Aucune réservation trouvée</p>
+                </div>
+              ) : (
+                filteredReservations.map((res) => (
+                  <div 
+                    key={res.id} 
+                    className="p-5 bg-white border-2 border-gray-200 rounded-xl hover:border-green-400 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                    onClick={() => setSelectedReservation(selectedReservation?.id === res.id ? null : res)}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center space-x-3">
+                        {getStatutIcon(res.statut)}
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-800">{res.destination}</h3>
+                          <p className="text-sm text-gray-600 flex items-center mt-1">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {new Date(res.dateReservation).toLocaleDateString("fr-FR", { dateStyle: 'full' })}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={getStatutBadge(res.statut)}>{res.statut}</span>
+                    </div>
+                    
+                    {selectedReservation?.id === res.id && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Nombre de personnes</p>
+                          <p className="font-semibold flex items-center">
+                            <Users className="w-4 h-4 mr-1 text-green-600" />
+                            {res.nombrePers}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Prix total</p>
+                          <p className="font-semibold text-green-600 text-lg">{res.prixTotal} €</p>
+                        </div>
+                        <div className="col-span-2 flex space-x-2 mt-2">
+                          <Button size="sm" className="flex-1">
+                            <Send className="w-4 h-4 mr-1" />
+                            Contacter
+                          </Button>
+                          {res.statut === 'en attente' && (
+                            <Button size="sm" variant="danger" className="flex-1">
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Annuler
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* ONGLET AVIS */}
+        {activeTab === 'reviews' && (
+          <Card title="⭐ Mes avis et commentaires" className="mb-8">
+            <div className="space-y-4">
+              {commentaires.length === 0 ? (
+                <div className="text-center py-12">
+                  <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 italic">Vous n'avez pas encore laissé d'avis</p>
+                </div>
+              ) : (
+                commentaires.map((com) => (
+                  <div key={com.id} className="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-lg font-bold text-gray-800">{com.destination}</h3>
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-5 h-5 ${i < com.notes ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-gray-700 italic mb-2">"{com.contenuCommentaire}"</p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(com.dateCommentaire).toLocaleDateString("fr-FR", { dateStyle: 'long' })}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* ONGLET MESSAGES */}
+        {activeTab === 'messages' && (
+          <Card title="💬 Ma messagerie" className="mb-8">
+            <div className="space-y-3">
+              {messages.length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 italic">Aucun message</p>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      msg.lu 
+                        ? 'bg-white border-gray-200 hover:border-gray-300' 
+                        : 'bg-green-50 border-green-300 hover:border-green-400 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className={`font-semibold ${msg.lu ? 'text-gray-800' : 'text-green-800'}`}>
+                        {msg.sujet}
+                        {!msg.lu && <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">Nouveau</span>}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {new Date(msg.dateEnvoie).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-600">{msg.contenuMessage}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ClientDashboard;
