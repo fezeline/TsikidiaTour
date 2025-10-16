@@ -21,7 +21,7 @@ const CommentaireForm: React.FC<CommentaireFormProps> = ({
   const [offres, setOffres] = useState<Offre[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
 
   const {
     register,
@@ -77,33 +77,13 @@ const CommentaireForm: React.FC<CommentaireFormProps> = ({
   }, [commentaire, offres, users, reset]);
 
   // Appels API
-  const postCommentaire = async (data: Commentaire) => {
-    const payload = {
-      ...data,
-      notes: parseFloat(data.notes.toString()),
-      dateCommentaire: new Date(data.dateCommentaire).toISOString(),
-    };
-    const res = await axios.post("http://localhost:4005/commentaire/", payload);
-    return res.data;
-  };
-
-  const putCommentaire = async (data: Commentaire) => {
-    const payload = {
-      ...data,
-      notes: parseFloat(data.notes.toString()),
-      dateCommentaire: new Date(data.dateCommentaire).toISOString(),
-    };
-    const res = await axios.put(`http://localhost:4005/commentaire/${commentaire?.id}`, payload);
-    return res.data;
-  };
+  
 
 const onSubmitForm = async (data: Commentaire) => {
   setIsSubmitting(true);
   setError(null);
-  setSuccessMessage(null);
   try {
-    await onSubmit(data); // <-- appelle la fonction du parent
-    setSuccessMessage(commentaire ? "Votre commentaire a été mis à jour !" : "Votre commentaire a été publié !");
+  await onSubmit(data); // <-- appelle la fonction du parent
     setTimeout(() => onCancel(), 1500); // ferme le modal automatiquement
   } catch (err: any) {
     setError(err.message || "Erreur lors de l'envoi");
@@ -126,7 +106,7 @@ const onSubmitForm = async (data: Commentaire) => {
           >
             <Star
               className={`w-6 h-6 ${
-                i < current ? 'text-yellow-400 fill-current' : 'text-gray-300 hover:text-yellow-400'
+                i < current ? 'text-green-400 fill-current' : 'text-gray-300 hover:text-green-400'
               } transition-colors`}
             />
           </button>

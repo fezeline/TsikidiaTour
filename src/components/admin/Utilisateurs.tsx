@@ -25,6 +25,8 @@ const AdminUtilisateurs: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [formData, setFormData] = useState<Partial<User>>({});
+  const [photos, setPhotos] = useState<Record<number, string | null>>({});
+
 
   // Ajout utilisateur
   const [addOpen, setAddOpen] = useState(false);
@@ -74,6 +76,16 @@ const AdminUtilisateurs: React.FC = () => {
       return () => clearTimeout(t);
     }
   }, [error, success]);
+
+  useEffect(() => {
+  const storedPhotos: Record<number, string> = {};
+  users.forEach((u) => {
+    const photo = localStorage.getItem(`photo_${u.id}`);
+    if (photo) storedPhotos[u.id] = photo;
+  });
+  setPhotos(storedPhotos);
+}, [users]);
+
 
   // ---------- Suppression ----------
   const handleDeleteClick = (user: User) => {
@@ -222,25 +234,21 @@ const confirmEdit = async () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
       <div className="max-w-7xl mx-auto">
-         <div className="mb-8">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Gestion des Utilisateurs</h1>
-         <p className="text-gray-600">Gérez tous les utilisateurs de votre plateforme</p>
         </div>
 
          <div className="flex justify-end mb-6">
-        <button
-          onClick={() => {
-            setNewUser({ nom: "", email: "", mot_de_passe: "", role: "admin", contact: "" });
-            setAddOpen(true);
-          }}
-          className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          + Ajouter
-        </button>
-
+            <button
+              onClick={() => {
+                setNewUser({ nom: "", email: "", mot_de_passe: "", role: "admin", contact: "" });
+                setAddOpen(true);
+              }}
+              className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              + Ajouter
+            </button>
           </div>
-
-
         {error && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
             <p className="text-red-700 font-medium">Erreur</p>
@@ -262,8 +270,30 @@ const confirmEdit = async () => {
               {/* Header */}
               <div className="bg-white p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-700">
-                    {getInitials(user.nom)}
+                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-700 relative">
+                      {photos[user.id] ? (
+                        <img
+                          src={photos[user.id]!}
+                          alt={user.nom}
+                          className="w-16 h-16 rounded-full object-cover border border-gray-300"
+                        />
+                      ) : (
+                        <span>{getInitials(user.nom)}</span>
+                      )}
+                      <input
+                        id={`photoInput_${user.id}`}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = URL.createObjectURL(file);
+                            setPhotos((prev) => ({ ...prev, [user.id]: url }));
+                            localStorage.setItem(`photo_${user.id}`, url);
+                          }
+                        }}
+                      />
                   </div>
                   <div className="text-right">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>

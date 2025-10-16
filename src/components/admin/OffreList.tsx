@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Edit2, Trash2, X, AlertTriangle } from "lucide-react";
 import { Offre } from "../../types";
 import axios from "axios";
-import OffreForm from "./OffreForm";
+//import OffreForm from "./OffreForm";
 
 // Fonction utilitaire pour convertir Buffer en base64
 const bufferToBase64 = (bufferObj: any): string => {
@@ -23,20 +23,26 @@ const bufferToBase64 = (bufferObj: any): string => {
 };
 
 interface OffreListProps {
-  offres:Offre[];
-  onEdit: (offre: Offre) => void;
-  onDelete: (id: number) => void;
+  offres?: Offre[];
+  onEdit?: (offre: Offre) => void;
+  onDelete?: (id: number) => void;
 }
 
-const OffreList: React.FC<OffreListProps> = (onEdit, onDelete) => {
-  const [offres, setOffres] = useState<Offre[]>([]);
-  const [editingOffre, setEditingOffre] = useState<Offre | null>(null);
+const OffreList: React.FC<OffreListProps> = ({ offres: offresProp, onEdit, onDelete }) => {
+  const [offresLocal, setOffresLocal] = useState<Offre[]>(offresProp || []);
+  //const [editingOffre, setEditingOffre] = useState<Offre | null>(null);
   const [offreToDelete, setOffreToDelete] = useState<Offre | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [searchTitre, setSearchTitre] = useState("");
+  const [notification, setNotification] = useState<{ message: string; type?: "success" | "error" } | null>(null);
 
-  
-  const getOffre = async () => {
+const showNotification = (message: string, type: "success" | "error" = "success") => {
+  setNotification({ message, type });
+  setTimeout(() => setNotification(null), 3000); // disparait après 3 secondes
+};
+
+
+const getOffre = async () => {
     try {
       const res = await axios.get("http://localhost:4005/offre/");
       if (res.data) {
@@ -47,82 +53,80 @@ const OffreList: React.FC<OffreListProps> = (onEdit, onDelete) => {
               ? bufferToBase64(offre.imagePrincipale)
               : offre.imagePrincipale,
         }));
-        setOffres(offresAvecImages);
+        setOffresLocal(offresAvecImages);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des offres :", error);
     }
-  };
+};
 
-  const handleDeleteClick = (offre: Offre) => {
+const handleDeleteClick = (offre: Offre) => {
     setOffreToDelete(offre);
     setShowConfirmDialog(true);
-  };
+};
 
-  const handleDeleteConfirm = async () => {
-    if (!offreToDelete) return;
-    
-    try {
-      await axios.delete(`http://localhost:4005/offre/${offreToDelete.id}`);
-      setOffres(offres.filter((h) => h.id !== offreToDelete.id));
-      setShowConfirmDialog(false);
-      setOffreToDelete(null);
-    } catch (error) {
-      console.error("Erreur lors de la suppression de l'offre :", error);
-      alert("Erreur lors de la suppression de l'offre");
-      setShowConfirmDialog(false);
-    }
-  };
+const handleDeleteConfirm = async () => {
+  if (!offreToDelete) return;
+  
+  try {
+    await axios.delete(`http://localhost:4005/offre/${offreToDelete.id}`);
+    setOffresLocal(prev => prev.filter(h => h.id !== offreToDelete.id));
+    setShowConfirmDialog(false);
+    showNotification("Offre supprimée avec succès !");
+    if (onDelete) onDelete(offreToDelete.id);
+    setOffreToDelete(null);
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'offre :", error);
+    showNotification("Erreur lors de la suppression de l'offre.", "error");
+    setShowConfirmDialog(false);
+  }
+};
 
-  const handleDeleteCancel = () => {
+const handleDeleteCancel = () => {
     setShowConfirmDialog(false);
     setOffreToDelete(null);
-  };
+};
 
-  const handleEditClick = (offre: Offre) => {
-    setEditingOffre(offre);
-  };
-
-  const handleFormSubmit = (updatedOffre: Offre) => {
-    const index = offres.findIndex((o) => o.id === updatedOffre.id);
-    if (index >= 0) {
-      const newList = [...offres];
-      newList[index] = updatedOffre;
-      setOffres(newList);
+const handleEditClick = (offre: Offre) => {
+    if (onEdit) {
+      onEdit(offre);
     } else {
-      setOffres([updatedOffre, ...offres]);
+      showNotification("Aucun gestionnaire d'édition fourni.", "error");
     }
-    setEditingOffre(null);
-  };
+};
 
-  const handleFormCancel = () => {
-    setEditingOffre(null);
-  };
-
-  useEffect(() => {
+useEffect(() => {
     getOffre();
   }, []);
 
-  return (
+return (
     <div className="p-6 relative">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        ✨ Nos Offres ✨
-      </h2>
-
-    <div className="mb-6 flex justify-end">
-  <input
-    type="text"
-    value={searchTitre}
-    onChange={(e) => setSearchTitre(e.target.value)}
-    placeholder="Rechercher par titre..."
-    className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
-  />
-</div>
-
+    
+      <div className="mb-6 flex justify-end">
+        <input
+          type="text"
+          value={searchTitre}
+          onChange={(e) => setSearchTitre(e.target.value)}
+          placeholder="Rechercher par titre..."
+          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 w-full sm:w-64"
+        />
+      </div>
+          {notification && (
+            <div
+              className={`fixed top-5 right-5 z-50 px-4 py-2 rounded shadow-lg text-white 
+                ${notification.type === "success" 
+                  ? "bg-green-500/70"   
+                  : "bg-red-500/80"     
+                }`}
+              style={{ minWidth: "200px", textAlign: "right" }} 
+            >
+              {notification.message}
+            </div>
+          )}
 
       {/* Liste d'offres */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {offres
+        {offresLocal
           .filter((offre) =>
             offre.titreOffre.toLowerCase().includes(searchTitre.toLowerCase())
           )
@@ -136,11 +140,11 @@ const OffreList: React.FC<OffreListProps> = (onEdit, onDelete) => {
               <img
                 src={`data:image/jpeg;base64,${offre.imagePrincipale}`}
                 alt={offre.titreOffre}
-                className="w-full h-48 object-cover rounded-xl mb-4 transition duration-300 hover:scale-105"
+                className="w-full h-40 sm:h-48 object-cover rounded-xl mb-4 transition duration-300 hover:scale-105"
                 onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
             ) : (
-              <div className="w-full h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+              <div className="w-full h-40 sm:h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
                 Pas d'image
               </div>
             )}
@@ -164,45 +168,23 @@ const OffreList: React.FC<OffreListProps> = (onEdit, onDelete) => {
               🚗 Voiture: {offre.voiture ? offre.voiture.marque : "Aucune voiture liée"}<br />
              
             </div>
-            <div className="mt-4 flex justify-end space-x-2">
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
               <button
                 className="px-3 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition flex items-center"
                 onClick={() => handleEditClick(offre)}
               >
                 <Edit2 className="w-4 h-4 mr-1" />
-                
               </button>
               <button
                 className="px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition flex items-center"
                 onClick={() => handleDeleteClick(offre)}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
-                
               </button>
             </div>
           </div>
         ))}
       </div>
-
-      {/* Formulaire en overlay modal */}
-      {editingOffre && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative">
-            <OffreForm
-              initialData={editingOffre}
-              onSubmit={handleFormSubmit}
-              onCancel={handleFormCancel}
-            />
-            <button
-              onClick={handleFormCancel}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-lg font-bold"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Boîte de dialogue de confirmation */}
       {showConfirmDialog && offreToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

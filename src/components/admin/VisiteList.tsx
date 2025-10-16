@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { Edit2, Trash2, Plus, X, AlertTriangle } from "lucide-react";
+import { Edit2, Trash2, X, AlertTriangle } from "lucide-react";
 import { Visite } from "../../types";
 import axios from "axios";
 import VisiteForm from "./VisiteForm";
 
 interface VisiteListProps {
-  visites:Visite[];
-  onEdit: (visite: Visite) => void;
-  onDelete: (id: number) => void;
+  visites?: Visite[];
+  onEdit?: (visite: Visite) => void;
+  onDelete?: (id: number) => void;
 }
 
-const VisiteList: React.FC<VisiteListProps> = (onEdit, onDelete) => {
-  const [visites, setVisites] = useState<Visite[]>([]);
+const VisiteList: React.FC<VisiteListProps> = ({ visites: visitesProp = [], onDelete }) => {
+  const [visites, setVisites] = useState<Visite[]>(visitesProp);
   const [editingVisite, setEditingVisite] = useState<Visite | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [visiteToDelete, setVisiteToDelete] = useState<Visite | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
 
   // Images associées aux visites - stockées dans public/images/visites/
   const visiteImages: Record<string, string> = {
@@ -60,49 +62,57 @@ const VisiteList: React.FC<VisiteListProps> = (onEdit, onDelete) => {
     setShowConfirmDialog(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!visiteToDelete) return;
-    
-    try {
-      await axios.delete(`http://localhost:4005/visite/${visiteToDelete.id}`);
-      setVisites(visites.filter((v) => v.id !== visiteToDelete.id));
-      setShowConfirmDialog(false);
-      setVisiteToDelete(null);
-    } catch (error) {
-      console.error("Erreur lors de la suppression de la visite:", error);
-      alert("Erreur lors de la suppression de la visite");
-      setShowConfirmDialog(false);
-    }
+  const showNotification = (message: string) => {
+  setNotification(message);
+  setTimeout(() => setNotification(null), 3000); // disparaît après 3 secondes
   };
+
+
+
+ const handleDeleteConfirm = async () => {
+  if (!visiteToDelete) return;
+
+  try {
+    await axios.delete(`http://localhost:4005/visite/${visiteToDelete.id}`);
+    setVisites(visites.filter((v) => v.id !== visiteToDelete.id));
+    setShowConfirmDialog(false);
+    setVisiteToDelete(null);
+    showNotification("🗑️ Visite supprimée avec succès !");
+    if (onDelete) onDelete(visiteToDelete.id);
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la visite:", error);
+    alert("Erreur lors de la suppression de la visite");
+    setShowConfirmDialog(false);
+  }
+};
+
 
   const handleDeleteCancel = () => {
     setShowConfirmDialog(false);
     setVisiteToDelete(null);
   };
 
-  const handleEdit = (visite: Visite) => {
-    setEditingVisite(visite);
-    setShowForm(true);
+ const handleEdit = (visite: Visite) => {
+  setEditingVisite(visite);
+  setShowForm(true);
   };
 
-  const handleCreate = () => {
-    setEditingVisite(null);
-    setShowForm(true);
-  };
+ const handleSuccess = (updatedVisite: Visite) => {
+  if (editingVisite) {
+    // ✅ Modification
+    setVisites((prev) =>
+      prev.map((v) => (v.id === updatedVisite.id ? updatedVisite : v))
+    );
+    showNotification("✅ Visite modifiée avec succès !");
+  } else {
+    // ✅ Ajout
+    setVisites((prev) => [...prev, updatedVisite]);
+    showNotification("✅ Nouvelle visite ajoutée avec succès !");
+  }
+  setEditingVisite(null);
+  setShowForm(false);
+};
 
-  const handleSuccess = (updatedVisite: Visite) => {
-    if (editingVisite) {
-      // Modification
-      setVisites((prev) =>
-        prev.map((v) => (v.id === updatedVisite.id ? updatedVisite : v))
-      );
-    } else {
-      // Création
-      setVisites((prev) => [...prev, updatedVisite]);
-    }
-    setEditingVisite(null);
-    setShowForm(false);
-  };
 
   const handleCancel = () => {
     setEditingVisite(null);
@@ -115,6 +125,11 @@ const VisiteList: React.FC<VisiteListProps> = (onEdit, onDelete) => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8 relative">
+        {notification && (
+        <div className="fixed top-4 right-4 bg-green-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 transition-opacity duration-300">
+          {notification}
+        </div>
+      )}
 
       {/* Liste */}
       <div className={`${showForm ? "blur-sm pointer-events-none" : ""}`}>

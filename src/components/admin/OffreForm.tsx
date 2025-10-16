@@ -20,6 +20,7 @@ const OffreForm: React.FC<OffreFormProps> = ({ initialData, onSubmit, onCancel }
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     reset(initialData || {});
@@ -50,6 +51,12 @@ const OffreForm: React.FC<OffreFormProps> = ({ initialData, onSubmit, onCancel }
 
   const formatDate = (dateString: string) => new Date(dateString).toISOString().split("T")[0];
 
+  const showToast = (message: string) => {
+  setToastMessage(message);
+  setTimeout(() => setToastMessage(null), 3000);
+  };
+
+
   const submitForm = async (data: Offre) => {
     setIsSubmitting(true);
     try {
@@ -73,23 +80,26 @@ const OffreForm: React.FC<OffreFormProps> = ({ initialData, onSubmit, onCancel }
         
       };
 
-      const response = initialData?.id
-        ? await axios.put(`http://localhost:4005/offre/${initialData.id}`, payload)
-        : await axios.post("http://localhost:4005/offre", payload);
+     const response = initialData?.id
+      ? await axios.put(`http://localhost:4005/offre/${initialData.id}`, payload)
+      : await axios.post("http://localhost:4005/offre", payload);
 
-      if (response.data) {
-        onSubmit(response.data);
-        reset();
-        setImageFile(null);
-        setPreview(null);
-      }
-    } catch (err) {
-      console.error("Erreur API :", err);
-      alert("Une erreur est survenue lors de l'envoi du formulaire.");
-    } finally {
-      setIsSubmitting(false);
+    if (response.data) {
+      onSubmit(response.data);
+      reset();
+      setImageFile(null);
+      setPreview(null);
+
+      // ✅ Toast de succès
+      showToast(initialData ? "Offre modifiée avec succès ✅" : "Offre ajoutée avec succès ✅");
     }
-  };
+  } catch (err) {
+    console.error("Erreur API :", err);
+    alert("Une erreur est survenue lors de l'envoi du formulaire.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
@@ -101,6 +111,14 @@ const OffreForm: React.FC<OffreFormProps> = ({ initialData, onSubmit, onCancel }
           <X className="w-5 h-5" />
         </button>
         <h2 className="text-xl font-semibold mb-4">{initialData ? "Modifier l'offre" : "Ajouter une offre"}</h2>
+
+        {/* 🔹 Toast */}
+        {toastMessage && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-green-700 font-semibold bg-black bg-opacity-10 shadow-md animate-fadeIn z-50">
+            {toastMessage}
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
           {/* Titre */}
           <div className="relative">

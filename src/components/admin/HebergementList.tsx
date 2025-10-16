@@ -12,13 +12,13 @@ const hebergementImages: Record<string, string> = {
 };
 
 interface HebergementListProps {
-  hebergements:Hebergement[];
-  onEdit: (hebergement: Hebergement) => void;
-  onDelete: (id: number) => void;
+  hebergements?: Hebergement[];
+  onEdit?: (hebergement: Hebergement) => void;
+  onDelete?: (id: number) => void;
 }
 
-const HebergementList: React.FC<HebergementListProps> = (onEdit,onDelete) => {
-  const [hebergements, setHebergements] = useState<Hebergement[]>([]);
+const HebergementList: React.FC<HebergementListProps> = ({ hebergements: hebergementsProp,  onDelete }) => {
+  const [hebergementsLocal, setHebergements] = useState<Hebergement[]>(hebergementsProp || []);
   const [editingHebergement, setEditingHebergement] = useState<Hebergement | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [hebergementToDelete, setHebergementToDelete] = useState<Hebergement | null>(null);
@@ -27,8 +27,8 @@ const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const getHebergement = async () => {
     try {
-      const res = await axios.get("http://localhost:4005/hebergement/");
-      if (res.data) setHebergements(res.data);
+  const res = await axios.get("http://localhost:4005/hebergement/");
+  if (res.data) setHebergements(res.data);
     } catch (error) {
       console.error("Erreur lors du chargement des hébergements:", error);
     }
@@ -44,7 +44,8 @@ const [successMessage, setSuccessMessage] = useState<string | null>(null);
     
     try {
       await axios.delete(`http://localhost:4005/hebergement/${hebergementToDelete.id}`);
-      setHebergements(hebergements.filter(h => h.id !== hebergementToDelete.id));
+  setHebergements(prev => prev.filter(h => h.id !== hebergementToDelete.id));
+  if (onDelete) onDelete(hebergementToDelete.id);
       setShowConfirmDialog(false);
       setHebergementToDelete(null);
     } catch (error) {
@@ -60,11 +61,12 @@ const [successMessage, setSuccessMessage] = useState<string | null>(null);
   };
 
   const handleEdit = (hebergement: Hebergement) => {
-    setEditingHebergement(hebergement);
-    setShowForm(true);
+  setEditingHebergement(hebergement);
+  setShowForm(true);
   };
 
-const handleSuccess = (updatedHebergement: Hebergement) => {
+
+  const handleSuccess = (updatedHebergement: Hebergement) => {
   const isEdit = !!editingHebergement; // vrai si on modifie, faux si on ajoute
 
   // Mettre à jour la liste
@@ -105,17 +107,16 @@ const handleSuccess = (updatedHebergement: Hebergement) => {
       <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
         🌍 Liste des Hébergements
       </h1>
-
-      {successMessage && (
-        <div className="mb-4 text-center bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
-          {successMessage}
-        </div>
-    )}
+          {successMessage && (
+            <div className="mb-4 text-center bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
+              {successMessage}
+            </div>
+        )}
 
       {/* Liste avec blur si modal ouvert */}
       <div className={showForm ? "blur-sm pointer-events-none" : ""}>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {hebergements.map((hebergement) => (
+          {hebergementsLocal.map((hebergement) => (
             <div
               key={hebergement.id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-500 overflow-hidden flex flex-col"
@@ -134,9 +135,9 @@ const handleSuccess = (updatedHebergement: Hebergement) => {
               <div className="p-6 flex-1 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">{hebergement.nom}</h2>
-                  <div className="flex text-yellow-500">
+                  <div className="flex text-green-500">
                     {Array.from({ length: hebergement.etoile || 0 }, (_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-500" />
+                      <Star key={i} className="w-5 h-5 fill-green-500" />
                     ))}
                   </div>
                 </div>

@@ -21,7 +21,6 @@ const OffresClient: React.FC = () => {
   const [hebergements, setHebergements] = useState<any[]>([]);
   const [reservationOffre, setReservationOffre] = useState<Offre | null>(null);
   const [selectedOffre, setSelectedOffre] = useState<Offre | null>(null);
-  const [favorites, setFavorites] = useState<number[]>([]);
   const [filteredOffres, setFilteredOffres] = useState<Offre[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentaireOffre, setCommentaireOffre] = useState<Offre | null>(null);
@@ -35,80 +34,87 @@ const OffresClient: React.FC = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [offresRes, visitesRes, voituresRes, commentairesRes, activitesRes, hebergementsRes, reservationsRes] = await Promise.all([
-          axios.get('http://localhost:4005/offre/'),
-          axios.get('http://localhost:4005/visite/'),
-          axios.get('http://localhost:4005/voiture/'),
-          axios.get('http://localhost:4005/commentaire/'),
-          axios.get('http://localhost:4005/activite/'),
-          axios.get('http://localhost:4005/hebergement/'),
-          axios.get('http://localhost:4005/reservation/') 
-        ]);
+        const fetchData = async () => {
+          try {
+            setLoading(true);
+            const [
+              offresRes,
+              visitesRes,
+              voituresRes,
+              commentairesRes,
+              activitesRes,
+              hebergementsRes,
+              //reservationsRes
+            ] = await Promise.all([
+              axios.get('http://localhost:4005/offre/'),
+              axios.get('http://localhost:4005/visite/'),
+              axios.get('http://localhost:4005/voiture/'),
+              axios.get('http://localhost:4005/commentaire/'),
+              axios.get('http://localhost:4005/activite/'),
+              axios.get('http://localhost:4005/hebergement/'),
+              axios.get('http://localhost:4005/reservation/')
+            ]);
 
-        let offresData: Offre[] = offresRes.data;
-        const reservations: Reservation[] = reservationsRes.data;
+            let offresData = offresRes.data;
+           
 
-        // 🔹 Calculer le nombre de places disponibles réelles
-        offresData = offresData.map(offre => {
-          const placesReservees = reservations
-            .filter(r => r.offreId === offre.id &&  (r.statut === "CONFIRMEE" || r.statut === "EN_ATTENTE"))
-            .reduce((acc, r) => acc + r.nombrePers, 0);
-          return {
-            ...offre,
-            placeDisponible: Math.max(offre.placeDisponible - placesReservees, 0)
-          };
-        });
 
-        setOffres(offresData);
-        setFilteredOffres(offresData);
-        setVisites(visitesRes.data);
-        setVoitures(voituresRes.data);
-        setCommentaires(commentairesRes.data);
-        setActivites(activitesRes.data);
-        setHebergements(hebergementsRes.data);
-      } catch (err) {
-        console.error("Erreur lors de la récupération des données:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+            setOffres(offresData);
+            setFilteredOffres(offresData);
+            setVisites(visitesRes.data);
+            setVoitures(voituresRes.data);
+            setCommentaires(commentairesRes.data);
+            setActivites(activitesRes.data);
+            setHebergements(hebergementsRes.data);
+          } catch (err) {
+            console.error("Erreur lors de la récupération des données:", err);
+          } finally {
+            setLoading(false);
+          }
+        };
 
     fetchData();
   }, []);
 
-  const handleReservationSubmit = async (data: Reservation) => {
-    try {
-      const payload = { ...data, offreId: reservationOffre?.id };
-      const response = await axios.post("http://localhost:4005/reservation/", payload);
 
-      // Mettre à jour le nombre de places disponibles seulement si payé
-      if (data.statut) {
-        setOffres(prev =>
-          prev.map(o =>
-            o.id === reservationOffre?.id
-              ? { ...o, placeDisponible: Math.max(o.placeDisponible - data.nombrePers, 0) }
-              : o
-          )
-        );
-        setFilteredOffres(prev =>
-          prev.map(o =>
-            o.id === reservationOffre?.id
-              ? { ...o, placeDisponible: Math.max(o.placeDisponible - data.nombrePers, 0) }
-              : o
-          )
-        );
-      }
-
-      alert("Réservation confirmée !");
-      setReservationOffre(null);
-    } catch (err) {
-      console.error("Erreur lors de la réservation:", err);
-      alert("Une erreur est survenue.");
+const handleReservationSubmit = async (data: Reservation) => {
+  try {
+    if (!reservationOffre?.id) {
+      alert("Erreur : aucune offre sélectionnée.");
+      return;
     }
+
+    const payload = {
+    nombrePers: data.nombrePers,
+    dateReservation: data.dateReservation, 
+    prixParPersonne: data.prixParPersonne,
+    montantTotal: data.montantTotal,
+    statut: "EN_ATTENTE",
+    utilisateurId: user?.id,
+    offreId: reservationOffre.id,
   };
+
+
+    console.log("Payload envoyé :", payload);
+
+    const response = await axios.post("http://localhost:4005/reservation", payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    console.log("Réponse serveur :", response.data);
+
+    alert("Réservation confirmée !");
+    setReservationOffre(null);
+  } catch (err: any) {
+    console.error("Erreur lors de la réservation:", err);
+    if (err.response) {
+      alert("Erreur serveur : " + JSON.stringify(err.response.data));
+    } else {
+      alert("Une erreur est survenue : " + err.message);
+    }
+  }
+};
+
 
 
   // Fonction pour soumettre un commentaire
@@ -190,10 +196,7 @@ const OffresClient: React.FC = () => {
     return voitures.find(v => v.id === voitureId);
   };
 
-  const findCommentaireDetails = (commentaireId: number | undefined) => {
-    if (!commentaireId) return null;
-    return commentaires.find(c => c.id === commentaireId);
-  };
+  
 
   const findActiviteDetails = (activiteId: number | undefined) => {
     if (!activiteId) return null;
@@ -221,13 +224,7 @@ const OffresClient: React.FC = () => {
       minute: '2-digit'
     });
 
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => 
-      prev.includes(id) 
-        ? prev.filter(favId => favId !== id)
-        : [...prev, id]
-    );
-  };
+  
 
   const handleReserverClick = (offre: Offre) => {
     setReservationOffre(offre);
@@ -289,7 +286,7 @@ const getCarImage = (marque?: string) => {
     return [...Array(5)].map((_, i) => (
       <Star 
         key={i} 
-        className={`w-4 h-4 ${i < note ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+        className={`w-4 h-4 ${i < note ? 'text-green-400 fill-green-400' : 'text-gray-300'}`} 
       />
     ));
   };
@@ -412,12 +409,11 @@ const getCarImage = (marque?: string) => {
                    </div>
                         )}
                    </div>
-
                   
                  
                   {/* Rating */}
                   <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-lg flex items-center">
-                    <Star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
+                    <Star className="w-4 h-4 text-green-500 fill-current mr-1" />
                     <span className="text-sm font-medium text-gray-900">{rating}</span>
                   </div>
                 </div>
@@ -463,6 +459,10 @@ const getCarImage = (marque?: string) => {
                           <Clock className="w-4 h-4 mr-2 text-purple-500" />
                           <span>Départ garanti</span>
                         </li>
+                         <li className="flex items-center">
+                           <Tag className="w-4 h-4 mr-2 text-yellow-500" />
+                            <span>Prix par personne : {offre.prixParPers}€</span>
+                          </li>
                       </ul>
                     </div>
                   </div>
@@ -508,11 +508,11 @@ const getCarImage = (marque?: string) => {
             );
           })}
         </div>
-{/* Modal de commentaire */}
-{commentaireOffre && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative max-h-[80vh] overflow-y-auto">
-      <button
+    {/* Modal de commentaire */}
+    {commentaireOffre && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative max-h-[80vh] overflow-y-auto">
+          <button
         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
         onClick={handleCloseCommentModal}
       >
@@ -537,11 +537,11 @@ const getCarImage = (marque?: string) => {
                 <span className="font-semibold text-gray-800">{c.utilisateur?.id || 'Utilisateur'}</span>
                 <span className="text-xs text-gray-500">{formatDateTime(c.dateCommentaire)}</span>
               </div>
-              <div className="flex items-center mb-1">
+                  <div className="flex items-center mb-1">
                 {[1,2,3,4,5].map((i) => (
                   <Star
                     key={i}
-                    className={`w-4 h-4 ${i <= c.notes ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                    className={`w-4 h-4 ${i <= c.notes ? 'text-green-400 fill-green-400' : 'text-gray-300'}`}
                   />
                 ))}
               </div>
@@ -569,7 +569,7 @@ const getCarImage = (marque?: string) => {
                           className="focus:outline-none"
                         >
                           <Star 
-                            className={`w-8 h-8 ${star <= noteCommentaire ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                            className={`w-8 h-8 ${star <= noteCommentaire ? 'text-green-400 fill-green-400' : 'text-gray-300'}`} 
                           />
                         </button>
 
@@ -654,7 +654,7 @@ const getCarImage = (marque?: string) => {
                 nombrePers: 0,
                 montantTotal: reservationOffre.prixParPers,
                 dateReservation: "",
-                statut: "ANNULEE",
+                statut: "EN_ATTENTE",
                 utilisateurId: 0,
                 id: 0,
               }}
@@ -708,7 +708,7 @@ const getCarImage = (marque?: string) => {
                       <h2 className="text-3xl font-bold mb-2">{selectedOffre.titreOffre}</h2>
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center">
-                          <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 mr-1" />
+                          <Star className="w-5 h-5 fill-green-400 text-green-400 mr-1" />
                           <span className="font-semibold">4.8</span>
                         </div>
                         <div className="flex items-center">
@@ -887,7 +887,7 @@ const getCarImage = (marque?: string) => {
               <span>Assurance incluse</span>
             </div>
             <div className="flex items-center">
-              <Award className="w-4 h-4 mr-2 text-yellow-500" />
+              <Award className="w-4 h-4 mr-2 text-green-500" />
               <span>Expérience locale</span>
              </div>
             </div>

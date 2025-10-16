@@ -1,7 +1,7 @@
 import React from 'react';
 import { Award, Heart, Target, Eye } from 'lucide-react';
 import Card from '../../components/ui/Card';
-import animations from '../../styles/animations.css'; // Fichier CSS custom pour les keyframes
+
 
 const AboutPage: React.FC = () => {
   const team = [
@@ -90,12 +90,6 @@ const AboutPage: React.FC = () => {
                 C'est pourquoi nous travaillons exclusivement avec des partenaires locaux 
                 et privilégions un tourisme durable.
               </p>
-              <div className="flex items-center space-x-4">
-                <Award className="w-8 h-8 text-blue-600" />
-                <span className="text-lg font-semibold text-gray-900">
-                  Certifié Tourisme Responsable
-                </span>
-              </div>
             </div>
             <div className="relative">
               <img
@@ -112,7 +106,7 @@ const AboutPage: React.FC = () => {
       <section className="relative py-20 bg-gradient-to-r from-white via-blue-50 to-white overflow-hidden">
         {/* Dégradé animé */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-blue-50 to-white animate-gradient" />
-
+      
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="card-animate text-center bg-white/80 backdrop-blur-md border border-gray-100 hover:shadow-2xl">
@@ -141,33 +135,6 @@ const AboutPage: React.FC = () => {
                 et excellence dans le service client.
               </p>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Notre équipe</h2>
-            <p className="text-xl text-gray-600">
-              Des professionnels passionnés à votre service
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <Card key={index} className="text-center hover:shadow-xl transition-shadow duration-300">
-                <img
-                  src={member.image}
-                  alt={member.name}
-                  className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-                />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-                <p className="text-blue-600 font-semibold mb-3">{member.role}</p>
-                <p className="text-gray-600">{member.description}</p>
-              </Card>
-            ))}
           </div>
         </div>
       </section>

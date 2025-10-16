@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit2, Trash2, RefreshCw, Car, X, AlertTriangle } from 'lucide-react';
+import { Edit2, Trash2, RefreshCw, X, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { Voiture } from '../../types';
 
@@ -92,6 +92,7 @@ const handleDeleteConfirm = async () => {
     // Ferme le dialogue
     setShowConfirmDialog(false);
     setVoitureToDelete(null);
+      if (onDelete) onDelete(voitureToDelete.id);
   } catch (error: any) {
     console.error(error);
     setError("Erreur lors de la suppression");

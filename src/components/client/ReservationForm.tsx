@@ -1,58 +1,56 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { Reservation } from "../../types";
 import { useNavigate } from "react-router-dom";
-import { Users, Calendar, CreditCard, User, Tag, CheckCircle, X } from "lucide-react";
-
+import { Users, Calendar, CreditCard, User, Tag, Gift } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ReservationFormProps {
   reservation?: Reservation;
-  onSubmit: (data: Reservation) => void;
+  onSubmit: (data: Reservation) => Promise<void>; // attention : doit retourner une promesse
   onCancel: () => void;
 }
 
 const ReservationForm: React.FC<ReservationFormProps> = ({ reservation, onSubmit, onCancel }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState<Reservation>({
     id: reservation?.id || 0,
-    nombrePers: reservation?.nombrePers || 1,
+    nombrePers: reservation?.nombrePers || 0,
     dateReservation: reservation?.dateReservation || "",
     prixParPersonne: reservation?.prixParPersonne || 0,
     montantTotal: reservation?.montantTotal || 0,
-    statut: reservation?.statut || "EN_ATTENTE",
+    statut: reservation?.statut && reservation.statut !== "ANNULEE" ? reservation.statut : "EN_ATTENTE",
     utilisateurId: reservation?.utilisateurId || 0,
     offreId: reservation?.offreId || 0,
   });
 
-  const [utilisateurs, setUtilisateurs] = useState<any[]>([]);
-  const [offres, setOffres] = useState<any[]>([]);
+  const [offres, setOffres] = useState<{ id: number; titreOffre: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [verifyingAvailability, setVerifyingAvailability] = useState(false);
 
+  // Charger les offres
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersRes, offresRes] = await Promise.all([
-          axios.get("http://localhost:4005/utilisateur/"),
-          axios.get("http://localhost:4005/offre/")
-        ]);
-        
-        setUtilisateurs(usersRes.data);
-        setOffres(offresRes.data);
+        const offreRes = await axios.get("http://localhost:4005/offre/");
+        setOffres(offreRes.data);
       } catch (err) {
-        console.error("Erreur lors du chargement des données:", err);
+        console.error("Erreur lors du chargement des offres:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
+  const offre = offres.find((o) => o.id === formData.offreId);
+
+  // Recalcul du montant total
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      montantTotal: prev.nombrePers * prev.prixParPersonne
+      montantTotal: prev.nombrePers * prev.prixParPersonne,
     }));
   }, [formData.nombrePers, formData.prixParPersonne]);
 
@@ -64,26 +62,32 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ reservation, onSubmit
       newValue = Number(newValue);
     }
 
-    setFormData(prev => ({ ...prev, [name]: newValue }));
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-    navigate("/client/reservation");
-  };
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
-  const handleEdit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const response = await axios.put(`http://localhost:4005/reservation/${formData.id}`, formData);
-    onSubmit(response.data);
-    alert("Réservation modifiée avec succès !");
-  } catch (err: any) {
-    console.error(err);
-    alert("Erreur lors de la modification : " + (err.response?.data?.error || err.message));
-  }
-};
+    try {
+      if (reservation?.id) {
+        // Modification
+        const response: AxiosResponse = await axios.put(`http://localhost:4005/reservation/${formData.id}`, formData);
+        await onSubmit(response.data);
+        alert("Réservation modifiée avec succès !");
+      } else {
+        // Création
+        await onSubmit(formData); // doit retourner une promesse dans la prop onSubmit
+        navigate("/client/reservation");
+      }
+    } catch (err: any) {
+      console.error("Erreur détaillée:", err);
+      if (err.response?.status === 400) {
+        alert("Données invalides. Vérifiez les informations saisies.");
+      } else {
+        alert("Erreur : " + (err.response?.data?.error || err.message));
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -94,178 +98,141 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ reservation, onSubmit
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto">
-     
+    <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl">
+        {/* En-tête */}
+        <div className="flex justify-between items-center border-b px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-800">
+            {reservation?.id ? "Modifier une réservation" : "Ajouter une réservation"}
+          </h2>
+          <button onClick={onCancel} className="text-gray-500 hover:text-gray-700 text-xl">
+            ×
+          </button>
+        </div>
 
-      {/* Formulaire avec défilement */}
-      <div className="max-h-[60vh] overflow-y-auto p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Corps du formulaire */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Nombre de personnes */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center">
-              <Users className="w-4 h-4 mr-2 text-blue-600" />
-              Nombre de personnes
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+              <Users className="w-4 h-4 mr-2 text-blue-600" /> Nombre de personnes
             </label>
             <input
               type="number"
               name="nombrePers"
-              min="1"
-              max="10"
+              min={1}
+              max={10}
               value={formData.nombrePers}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           {/* Date de réservation */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center">
-              <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-              Date de réservation
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+              <Calendar className="w-4 h-4 mr-2 text-blue-600" /> Date de réservation
             </label>
             <input
               type="date"
               name="dateReservation"
               value={formData.dateReservation}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
-          {/* Prix par personne */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center">
-              <Tag className="w-4 h-4 mr-2 text-green-600" />
-              Prix par personne
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">€</span>
+          {/* Prix par personne et Montant total */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                <Tag className="w-4 h-4 mr-2 text-green-600" /> Prix par personne
+              </label>
               <input
                 type="number"
                 name="prixParPersonne"
                 value={formData.prixParPersonne}
                 disabled
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
               />
             </div>
-          </div>
-
-          {/* Montant total */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center">
-              <CreditCard className="w-4 h-4 mr-2 text-purple-600" />
-              Montant total
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">€</span>
+            <div>
+              <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                <CreditCard className="w-4 h-4 mr-2 text-purple-600" /> Montant total
+              </label>
               <input
                 type="number"
                 name="montantTotal"
                 value={formData.montantTotal}
                 disabled
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 font-semibold"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-semibold"
               />
             </div>
-            <p className="text-sm text-gray-500">
-              Calculé automatiquement: {formData.nombrePers} personne(s) × €{formData.prixParPersonne}
-            </p>
           </div>
 
           {/* Statut */}
-          <div className="flex items-center p-4 bg-gray-50 rounded-xl">
-          <select
-            name="statut"
-            value={formData.statut}
-            onChange={(e) =>
-              setFormData({ ...formData, statut: e.target.value as "EN_ATTENTE" | "CONFIRMEE" | "ANNULEE" })
-            }
-            className="border rounded p-2"
-          >
-            <option value="EN_ATTENTE">En attente</option>
-            <option value="CONFIRMEE">Confirmée</option>
-            <option value="ANNULEE">Annulée</option>
-          </select>
-
-            
-          </div>
-
-          {/* Utilisateur */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center">
-              <User className="w-4 h-4 mr-2 text-orange-600" />
-              Utilisateur
-            </label>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1">Statut</label>
             <select
-              name="utilisateurId"
-              value={formData.utilisateurId}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              required
-            >
-              <option value="">Sélectionner un utilisateur</option>
-              {utilisateurs.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nom} {u.prenom} - {u.email}
-                </option>
-              ))}
+              name="statut"
+              value={formData.statut ? formData.statut : "EN_ATTENTE"}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  statut: e.target.value as "EN_ATTENTE" | "CONFIRMEE" | "ANNULEE",
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            > 
+              <option value="CONFIRMEE">Confirmée</option>  
             </select>
           </div>
 
-          {/* Offre */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 flex items-center">
-              <Tag className="w-4 h-4 mr-2 text-red-600" />
-              Offre
+          {/* Utilisateur connecté */}
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+              <User className="w-4 h-4 mr-2 text-green-600" /> Utilisateur
             </label>
-            <select
-              name="offreId"
-              value={formData.offreId}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              required
-            >
-              <option value="">Sélectionner une offre</option>
-              {offres.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.titreOffre || o.titre} - €{o.prixParPers}
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={user?.nom + " (" + user?.email + ")"}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+            />
           </div>
-        </form>
-      </div>
 
-      {/* Footer avec boutons */}
-      <div className="bg-gray-50 p-6 border-t border-gray-200">
-        <div className="flex justify-end space-x-4">
-           <button
-             type="button"
-             onClick={onCancel}
-             className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-100 transition-all"
-           >
-             Annuler
-           </button>
+          {/* Offre correspondante */}
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+              <Gift className="w-4 h-4 mr-2 text-pink-600" /> Offre correspondante
+            </label>
+            <input
+              type="text"
+              value={offre ? offre.titreOffre : "Non spécifiée"}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-medium"
+            />
+          </div>
 
-            {reservation?.id ? (
+          {/* Pied du formulaire */}
+          <div className="flex justify-end gap-3 border-t px-6 py-4 bg-gray-50">
             <button
               type="button"
-              onClick={handleEdit}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all"
-            > 
-              Modifier 
-            </button>
-           ) : (
-            <button
-               type="button"
-               onClick={handleSubmit}
-               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all"
+              onClick={onCancel}
+              className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100"
             >
-              Ajouter 
+              Annuler
             </button>
-            )}
-         </div>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-md"
+            >
+              {reservation?.id ? "Modifier" : "Ajouter"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

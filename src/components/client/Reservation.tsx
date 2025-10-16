@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, MapPin, Euro,CheckCircle } from 'lucide-react';
+import { Calendar, Users, CreditCard, Euro } from 'lucide-react';
 import { Clock, AlertTriangle,Edit2 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -15,30 +15,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const API_BASE = "http://localhost:4005";
 
-// 🔹 Composant pour afficher le statut et notifications
-const ReservationStatusMessage: React.FC<{ statut: string, tempsRestant?: string }> = ({ statut, tempsRestant }) => {
-  if (statut === "CONFIRMEE") return (
-    <div className="text-green-600 font-semibold flex items-center gap-1">
-      <CheckCircle size={14} /> Réservation confirmée
-    </div>
-  );
-  if (statut === "ANNULEE") return (
-    <div className="text-red-600 font-semibold flex items-center gap-1">
-      <AlertTriangle size={14} /> Réservation annulée
-    </div>
-  );
-  if (statut === "EN_ATTENTE" && tempsRestant === "Expirée") return (
-    <div className="text-red-600 font-semibold flex items-center gap-1">
-      <AlertTriangle size={14} /> Cette réservation a expiré (non payée dans les 24h)
-    </div>
-  );
-  if (statut === "EN_ATTENTE") return (
-    <div className="text-yellow-600 flex items-center gap-1">
-      <Clock size={14} /> {tempsRestant}
-    </div>
-  );
-  return null;
-};
+// ReservationStatusMessage removed (not used)
 
 
 const ReservationList: React.FC = () => {
@@ -50,9 +27,7 @@ const ReservationList: React.FC = () => {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('TOUS');
-  const [offresMap, setOffresMap] = useState<{ [id: number]: string }>({});
-  const [showReservationForm, setShowReservationForm] = useState(false);
-  const [reservationToEdit, setReservationToEdit] = useState<Reservation | null>(null);
+  
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   
 useEffect(() => {
@@ -62,7 +37,8 @@ useEffect(() => {
     try {
       const [resResa, resOffres] = await Promise.all([
         axios.get(`${API_BASE}/reservation/`),
-        axios.get(`${API_BASE}/offre/`)
+        axios.get(`${API_BASE}/offre/`),
+        axios.get(`${API_BASE}/utilisateur/`),
       ]);
 
       // Construire map des offres
@@ -134,19 +110,7 @@ useEffect(() => {
   };
 
 
-const handlePayer = async (reservation: Reservation) => {
-  try {
-    const response = await axios.post(
-      `http://localhost:4005/reservation/${reservation.id}/confirmer-paiement`
-    );
-    console.log(response.data);
-    alert("Paiement confirmé avec succès !");
-  } catch (error: any) {
-    console.error("Erreur lors de la confirmation du paiement :", error);
-    alert("Erreur lors de la confirmation du paiement : " + 
-          (error?.response?.data?.error || error.message));
-  }
-};
+// handlePayer removed (not used in this component)
 
 
 
@@ -173,17 +137,16 @@ const handlePayer = async (reservation: Reservation) => {
 
        {editingReservation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-             <ReservationForm
-                reservation={editingReservation}
-                onSubmit={(updatedReservation) => {
-                 // Mettre à jour la liste
+            <ReservationForm
+              reservation={editingReservation}
+              onSubmit={async (updatedReservation) => {
                 setReservations(prev =>
-                prev.map(r => r.id === updatedReservation.id ? updatedReservation : r)
-               );
-               setEditingReservation(null); // fermer le formulaire
+                  prev.map(r => r.id === updatedReservation.id ? updatedReservation : r)
+                );
+                setEditingReservation(null);
               }}
               onCancel={() => setEditingReservation(null)}
-             />
+            />
           </div>
          )}
 
@@ -217,7 +180,7 @@ const handlePayer = async (reservation: Reservation) => {
                 <h3 className="font-bold">Réservation #{reservation.id}</h3>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   reservation.statut === 'CONFIRMEE' ? 'bg-green-100 text-green-800' :
-                  reservation.statut === 'EN_ATTENTE' ? 'bg-yellow-100 text-yellow-800' :
+                  reservation.statut === 'EN_ATTENTE' ? 'bg-yellow-100 text-orange-800' :
                   'bg-red-100 text-red-800'
                 }`}>
                   {reservation.statut}
@@ -312,6 +275,7 @@ const StripePaymentForm: React.FC<{
   onBack: () => void;
   onSuccess: (updatedReservation: Reservation) => void;
 }> = ({ reservation, onBack, onSuccess }) => {
+  const { user } = useAuth();
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -391,6 +355,19 @@ const StripePaymentForm: React.FC<{
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Utilisateur connecté */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Utilisateur</label>
+          <input
+            type="text"
+            value={user?.email || ""} // Affiche nom et email
+            readOnly
+            className="w-full p-3 border rounded-lg bg-gray-100 cursor-not-allowed"
+          />
+        </div>
+
+
+          {/* Description obligatoire */}
           <label className="block text-sm font-medium text-gray-700">Description</label>
           <input
             type="text"
@@ -401,19 +378,19 @@ const StripePaymentForm: React.FC<{
             required
           />
 
-          <label className="block text-sm font-medium text-gray-700">
-            Carte de Crédit
-          </label>
+          {/* Carte de crédit */}
+          <label className="block text-sm font-medium text-gray-700">Carte de Crédit</label>
           <div className="p-3 border border-gray-300 rounded-md">
             <CardElement options={{ hidePostalCode: true }} />
           </div>
 
           {error && <p className="text-red-600">{error}</p>}
 
-          <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700">
             {loading ? "Traitement..." : `Payer ${(reservation.nombrePers * reservation.prixParPersonne).toLocaleString()} €`}
           </Button>
         </form>
+
       </div>
     </div>
   );

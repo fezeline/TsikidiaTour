@@ -241,15 +241,16 @@ const PaiementList: React.FC = () => {
                     <button
                       type="button"
                       disabled={!canModifyPayment(paiement)}
-                      className={`p-2 rounded transition-colors ${
+                      className={`ml-2 px-3 py-2 rounded-lg transition flex items-center justify-center text-white ${
                         canModifyPayment(paiement)
-                          ? "text-red-600 hover:text-red-800 hover:bg-red-100"
-                          : "text-gray-400 cursor-not-allowed"
+                          ? "bg-red-500 hover:bg-red-600"
+                          : "bg-gray-400 cursor-not-allowed"
                       }`}
                       onClick={() => canModifyPayment(paiement) && handleDeleteClick(paiement)}
                       title={canModifyPayment(paiement) ? "Supprimer" : "Suppression non autorisée"}
                     >
                       <Trash2 className="w-4 h-4" />
+                      <span className="ml-1"></span>
                     </button>
                   </div>
                 </td>

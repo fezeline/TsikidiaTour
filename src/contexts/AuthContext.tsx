@@ -8,6 +8,7 @@ interface AuthContextType {
   logout: () => void;
   isAdmin: boolean;
   isClient: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isClient = user?.role === 'client';
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isClient }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isClient, setUser }}>
       {children}
     </AuthContext.Provider>
   );

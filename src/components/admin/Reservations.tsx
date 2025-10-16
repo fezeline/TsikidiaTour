@@ -6,12 +6,12 @@ import { Reservation } from '../../types';
 import axios from 'axios';
 
 interface ReservationListProps {
-  reservations:Reservation[];
-  onDelete: (id: number) => void;
+  reservations?: Reservation[];
+  onDelete?: (id: number) => void;
 }
 
-const ReservationList: React.FC<ReservationListProps> = (onDelete) => {
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+const ReservationList: React.FC<ReservationListProps> = ({ reservations: reservationsProp, onDelete }) => {
+  const [reservationsLocal, setReservations] = useState<Reservation[]>(reservationsProp || []);
   const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('TOUS');
@@ -21,7 +21,7 @@ const ReservationList: React.FC<ReservationListProps> = (onDelete) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [reservationToDelete, setReservationToDelete] = useState<Reservation | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showExpiredOnly, setShowExpiredOnly] = useState(false);
+  const showExpiredOnly = false;
   
 
   const API_BASE = "http://localhost:4005";
@@ -77,14 +77,15 @@ const getReservation = async () => {
 const handleDeleteConfirm = async () => {
   if (!reservationToDelete) return;
   try {
-    await axios.delete(`${API_BASE}/reservation/${reservationToDelete.id}`);
+  await axios.delete(`${API_BASE}/reservation/${reservationToDelete.id}`);
 
-    // Supprimer de la liste
-    setReservations(reservations.filter(r => r.id !== reservationToDelete.id));
+  // Supprimer de la liste
+  setReservations(prev => prev.filter(r => r.id !== reservationToDelete.id));
 
     // Fermer le modal
-    setShowConfirmDialog(false);
-    setReservationToDelete(null);
+  setShowConfirmDialog(false);
+  if (onDelete) onDelete(reservationToDelete.id);
+  setReservationToDelete(null);
 
     // Message de succès
     setTimeout(() => {
@@ -110,12 +111,12 @@ const handleDeleteConfirm = async () => {
 
   // Filtrage et tri
   useEffect(() => {
-    let result = [...reservations];
+  let result = [...reservationsLocal];
 
    if (searchTerm) {
       
       result = result.filter(reservation =>
-        reservation.id.toString().includes(searchTerm.toLowerCase())
+  reservation.id.toString().includes(searchTerm.toLowerCase())
         
       );
     }
@@ -144,7 +145,7 @@ const handleDeleteConfirm = async () => {
     });
 
     setFilteredReservations(result);
-  }, [reservations, searchTerm, statusFilter, sortBy, sortOrder, showExpiredOnly]);
+  }, [reservationsLocal, searchTerm, statusFilter, sortBy, sortOrder, showExpiredOnly]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -181,9 +182,9 @@ const handleDeleteConfirm = async () => {
                 </div>
               </div>
               <div className={`absolute top-4 right-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                statutAffiche === 'ANNULEE' ? 'bg-red-100 text-red-800' :
-                statutAffiche === 'CONFIRMEE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
+                          statutAffiche === 'ANNULEE' ? 'bg-red-100 text-red-800' :
+                          statutAffiche === 'CONFIRMEE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
                 {statutAffiche === 'ANNULEE' ? '❌ Annulée' :
                  statutAffiche === 'CONFIRMEE' ? '✅ Confirmée' : '⏳ En attente'}
               </div>
@@ -247,7 +248,7 @@ const handleDeleteConfirm = async () => {
                   <h3 className="text-lg font-bold text-gray-900">Réservation #{reservation.id}</h3>
                   <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                     statutAffiche === 'ANNULEE' ? 'bg-red-100 text-red-800' :
-                    statutAffiche === 'CONFIRMEE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    statutAffiche === 'CONFIRMEE' ? 'bg-green-100 text-green-800' : 'bg-green-100 text-green-800'
                   }`}>
                     {statutAffiche === 'ANNULEE' ? '❌ Annulée' :
                      statutAffiche === 'CONFIRMEE' ? '✅ Confirmée' : '⏳ En attente'}
@@ -256,15 +257,15 @@ const handleDeleteConfirm = async () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                   <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2 text-blue-600" />
+                    <Calendar className="w-4 h-4 mr-2 text-green-600" />
                     <span>{formatDate(reservation.dateReservation)}</span>
                   </div>
                   <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-2 text-purple-600" />
+                    <Users className="w-4 h-4 mr-2 text-green-600" />
                     <span>{reservation.nombrePers} personne(s)</span>
                   </div>
                   <div className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-2 text-indigo-600" />
+                    <MapPin className="w-4 h-4 mr-2 text-green-600" />
                     <span className="truncate">{reservation.offreTitre || "Offre inconnue"}</span>
                   </div>
                   <div className="flex items-center font-semibold text-green-700">
@@ -305,7 +306,7 @@ const handleDeleteConfirm = async () => {
 
         <Card className="p-6 mb-8 rounded-2xl shadow-lg border-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative flex-grow">
+              <div className="relative flex-grow">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
@@ -314,7 +315,7 @@ const handleDeleteConfirm = async () => {
                 placeholder="Rechercher par ID ou destination..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-sm"
               />
             </div>
 
@@ -348,7 +349,7 @@ const handleDeleteConfirm = async () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-sm"
               >
                 <option value="TOUS">Tous les statuts</option>
                 <option value="EN_ATTENTE">En attente</option>
@@ -374,12 +375,12 @@ const handleDeleteConfirm = async () => {
 
         {filteredReservations.length === 0 && (
           <Card className="text-center py-12 rounded-2xl shadow-lg border-0">
-            <div className="bg-gradient-to-br from-blue-100 to-purple-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="w-10 h-10 text-blue-600" />
+              <div className="bg-gradient-to-br from-green-100 to-green-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-10 h-10 text-green-600" />
             </div>
             <h3 className="text-xl font-medium text-gray-900 mb-2">Aucune réservation trouvée</h3>
             <p className="text-gray-500 max-w-md mx-auto">
-              {reservations.length === 0 
+              {reservationsLocal.length === 0 
                 ? "Aucune réservation n'a été trouvée." 
                 : "Aucune réservation ne correspond à vos critères de recherche."}
             </p>

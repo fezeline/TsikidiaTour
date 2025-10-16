@@ -102,7 +102,7 @@ const RegisterPage: React.FC = () => {
       {/* Contenu du formulaire */}
       <div className="relative z-10 max-w-md w-full px-4">
         <div className="text-center mb-8">
-          <p className="text-white text-lg">Créez votre compte pour découvrir Madagascar</p>
+          <p className="text-white text-lg">Créez votre compte </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-xl p-8">

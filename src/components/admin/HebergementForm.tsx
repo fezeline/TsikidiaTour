@@ -32,8 +32,8 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
         }
       );
 
-      const result = await response.json();
-      onSubmit(data);
+  await response.json();
+  onSubmit(data);
     } catch (err) {
       console.error("Erreur API Hebergement:", err);
     }
@@ -46,7 +46,7 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
         <input
           placeholder="Nom"
           {...register("nom", { required: "Le nom est requis" })}
-          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
         />
         <label className="absolute left-3 top-2 text-gray-500 text-sm transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-gray-600 peer-focus:text-sm">
           Nom
@@ -59,7 +59,7 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
         <input
           placeholder="Adresse"
           {...register("adresse", { required: "L'adresse est requise" })}
-          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
         />
         <label className="absolute left-3 top-2 text-gray-500 text-sm transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-gray-600 peer-focus:text-sm">
           Adresse
@@ -71,7 +71,7 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
       <div className="relative">
         <select
           {...register("etoile", { required: "Le nombre d'étoiles est requis", valueAsNumber: true })}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
         >
           <option value="">Sélectionner</option>
           {[1,2,3,4,5].map(n => (
@@ -91,7 +91,7 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
             min: { value: 1, message: "Les frais doivent être supérieurs à 0" },
             valueAsNumber: true
           })}
-          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
         />
         <label className="absolute left-3 top-2 text-gray-500 text-sm transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-gray-600 peer-focus:text-sm">
           Frais par nuit (€)
@@ -109,7 +109,7 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
             min: { value: 1, message: "Le nombre de nuits doit être au moins 1" },
             valueAsNumber: true
           })}
-          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+          className="peer w-full rounded-lg border border-gray-300 px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
         />
         <label className="absolute left-3 top-2 text-gray-500 text-sm transition-all peer-placeholder-shown:top-5 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-gray-600 peer-focus:text-sm">
           Nombre de nuits
@@ -128,7 +128,7 @@ const HebergementForm: React.FC<HebergementFormProps> = ({ initialData, onSubmit
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center"
         >
           <Building className="w-4 h-4 mr-2" />
           {initialData ? "Modifier" : "Ajouter"}

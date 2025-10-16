@@ -107,15 +107,21 @@ const CommentaireList: React.FC<CommentaireListProps> = ({ onEdit, refreshTrigge
                 <td className="px-6 py-4 flex space-x-2">
                   {/* Modifier seulement si client et propriétaire */}
                   {isOwner && !isAdmin && (
-                    <button onClick={() => onEdit(commentaire)} className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded">
-                      <Edit2 className="w-4 h-4" />
+                    <button
+                      type="button"
+                      onClick={() => onEdit(commentaire)}
+                      className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center inline-flex"
+                      title="Modifier le commentaire"
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      <span></span>
                     </button>
                   )}
                   {/* Supprimer si admin ou propriétaire */}
                   {(isOwner || isAdmin) && (
                     <button
                       onClick={() => { setCommentToDelete(commentaire.id); setShowConfirm(true); }}
-                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
+                     className="ml-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center inline-flex"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

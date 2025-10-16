@@ -55,7 +55,7 @@ const LoginPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4">
             <MapPin className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Tsikidia Tour</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">TsikiDia Tour</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -64,7 +64,7 @@ const LoginPage: React.FC = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="votre@email.com"
+            placeholder="Votre Email"
             required
             className="bg-white bg-opacity-90"
           />
@@ -83,7 +83,7 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate("/forgot-password")}
-              className="text-sm text-blue-400 hover:text-blue-600 underline"
+              className="text-sm text-blue-600 hover:text-blue-600 underline"
             >
               Mot de passe oublié ?
             </button>

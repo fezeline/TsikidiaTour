@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { 
-  Users, Car, Gift, Calendar, CreditCard, TrendingUp, Activity, CheckCircle, Zap,Target,
-  Award, RefreshCw, BarChart3, PieChart as PieChartIcon, Download, Star, ChevronUp,
-  ChevronDown, Settings, Bell, Filter
+  Car, CreditCard, TrendingUp, Activity, CheckCircle, Zap, Target,
+  Award, RefreshCw, BarChart3, Download, Star, Filter
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts";
 import axios from "axios";
@@ -31,7 +30,7 @@ interface Offre {
 
 interface Payement {
   id: number;
-  montant: number; // float, TypeScript le considère comme number
+  montant: number; 
   date: string;
   reservationId?: number;
   utilisateurEmail?: string;
@@ -45,10 +44,6 @@ interface Voiture {
   immatriculation: string;
 }
 
-interface Utilisateur {
-  id: number;
-  email: string;
-}
 
 interface RevenusTemporels {
   date: string;
@@ -61,10 +56,9 @@ const Dashboard = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [voitures, setVoitures] = useState<Voiture[]>([]);
   const [payements, setPayements] = useState<Payement[]>([]);
-  const [users, setUtilisateurs] = useState<Utilisateur[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeView, setActiveView] = useState('overview');
+  const [activeView, _setActiveView] = useState('overview');
 
   useEffect(() => {
     fetchData();
@@ -73,19 +67,17 @@ const Dashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [offresRes, reservationsRes, voituresRes, payementsRes, usersRes] = await Promise.all([
+      const [offresRes, reservationsRes, voituresRes, payementsRes] = await Promise.all([
         axios.get("http://localhost:4005/offre/"),
         axios.get("http://localhost:4005/reservation/"),
         axios.get("http://localhost:4005/voiture/"),
         axios.get("http://localhost:4005/payement/"),
-        axios.get("http://localhost:4005/utilisateur/"),
       ]);
 
       setOffres(offresRes.data);
       setReservations(reservationsRes.data);
       setVoitures(voituresRes.data);
       setPayements(payementsRes.data);
-      setUtilisateurs(usersRes.data);
     } catch (error) {
       console.error("Erreur lors de la récupération des données", error);
     } finally {
@@ -114,7 +106,7 @@ const Dashboard = () => {
     );
   }
 
-  const isExpired = (reservation: Reservation) => {
+const isExpired = (reservation: Reservation) => {
   if (!reservation.dateExpiration) return false;
   const expirationDate = new Date(reservation.dateExpiration);
   const now = new Date();
@@ -126,12 +118,12 @@ const getStatutAffiche = (reservation: Reservation) => {
 };
 
   // 📊 Calculs statistiques
-  const reservationsConfirmees = reservations.filter(r => getStatutAffiche(r) === "CONFIRMEE").length;
+const reservationsConfirmees = reservations.filter(r => getStatutAffiche(r) === "CONFIRMEE").length;
 const reservationsEnAttente = reservations.filter(r => getStatutAffiche(r) === "EN_ATTENTE").length;
 const reservationsAnnulees = reservations.filter(r => getStatutAffiche(r) === "ANNULEE").length;
 
 
-  const isReservationActive = (reservation: Reservation) => {
+const isReservationActive = (reservation: Reservation) => {
   return (
     getStatutAffiche(reservation) === "CONFIRMEE" &&
     (!reservation.dateExpiration || new Date(reservation.dateExpiration) > new Date())
@@ -144,9 +136,9 @@ const voituresOccupees = voitures.filter(v =>
 
 const voituresDisponibles = voitures.length - voituresOccupees;
 
- const revenusTotaux = payements.reduce((sum, p) => sum + (p.montant ?? 0), 0);
+const revenusTotaux = payements.reduce((sum, p) => sum + (p.montant ?? 0), 0);
 
-  const now = new Date();
+const now = new Date();
 const revenusMensuels = payements
   .filter(p => {
     const d = new Date(p.date);
@@ -162,9 +154,9 @@ const revenusHebdo = payements
   })
   .reduce((sum, p) => sum + (p.montant ?? 0), 0);
 
-  const tauxConfirmation = reservations.length > 0 ? ((reservationsConfirmees / reservations.length) * 100).toFixed(1) : 0;
+const tauxConfirmation = reservations.length > 0 ? ((reservationsConfirmees / reservations.length) * 100).toFixed(1) : 0;
 
-  const stats = [
+const stats = [
     { 
       title: "Revenus Totaux", 
       value: `${revenusTotaux.toLocaleString()} €`, 
@@ -197,7 +189,7 @@ const revenusHebdo = payements
   ];
 
   // 📈 Données graphiques
-  const revenusParMois = Array.from({ length: 12 }, (_, i) => ({
+const revenusParMois = Array.from({ length: 12 }, (_, i) => ({
     mois: new Date(0, i).toLocaleString("fr", { month: "short" }),
     total: payements
       .filter((p) => new Date(p.date).getMonth() === i)
@@ -205,7 +197,7 @@ const revenusHebdo = payements
     reservations: reservations
       .filter((r) => new Date(r.dateReservation).getMonth() === i)
       .length
-  }));
+}));
 
 const revenusTemporels: RevenusTemporels[] = payements
   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -218,7 +210,7 @@ const revenusTemporels: RevenusTemporels[] = payements
       acc.push({ date, montant: payment.montant || 0 });
     }
     return acc;
-  }, []);
+}, []);
 
 
 const topOffres = offres
@@ -240,8 +232,8 @@ const topOffres = offres
       enAttente,
       annulees,
       revenus,
-      tauxConfirmation: offreReservations.length > 0 
-        ? ((confirmees / offreReservations.length) * 100).toFixed(1) 
+      tauxConfirmation: offreReservations.length > 0
+        ? ((confirmees / offreReservations.length) * 100).toFixed(1)
         : 0
     };
   })
@@ -251,16 +243,10 @@ const topOffres = offres
 
   // 📈 Données du graphique
 const reservationStatusData = [
-  { name: "Confirmées", value: reservationsConfirmees, color: "#10b981" },
-  { name: "En attente", value: reservationsEnAttente, color: "#f59e0b" },
+    { name: "Confirmées", value: reservationsConfirmees, color: "#10b981" },
+  { name: "En attente", value: reservationsEnAttente, color: "#10b981" },
   { name: "Annulées", value: reservationsAnnulees, color: "#ef4444" }
 ];
-
-
-  const voitureStatusData = [
-    { name: "Disponibles", value: voituresDisponibles, color: "#10b981" },
-    { name: "Occupés", value: voituresOccupees, color: "#ef4444" }
-  ];
 
   return (
      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 relative z-30">
@@ -288,7 +274,7 @@ const reservationStatusData = [
 
       <div className="relative z-20 p-6 space-y-8">
         {/* Statistiques améliorées */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
           {stats.map((stat, idx) => (
             <div
               key={idx}
@@ -329,9 +315,6 @@ const reservationStatusData = [
                   </div>
                   Revenus mensuels
                 </h2>
-                <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Download className="w-4 h-4" />
-                </button>
               </div>
               
               <div className="h-80">
@@ -487,8 +470,8 @@ const reservationStatusData = [
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-yellow-50 rounded-lg">
-                <Award className="w-5 h-5 text-yellow-600" />
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Award className="w-5 h-5 text-green-600" />
               </div>
               Top Offres Performantes
             </h2>
@@ -508,9 +491,9 @@ const reservationStatusData = [
               <div key={offre.id} className="group relative p-5 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center justify-between mb-4">
                   <div className={`flex items-center justify-center w-8 h-8 rounded-lg text-white font-bold text-sm ${
-                    idx === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                    idx === 0 ? 'bg-gradient-to-r from-green-400 to-green-600' :
                     idx === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-600' :
-                    idx === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                    idx === 2 ? 'bg-gradient-to-r from-green-400 to-green-600' :
                     'bg-gradient-to-r from-blue-400 to-blue-600'
                   }`}>
                     {idx + 1}
@@ -518,9 +501,9 @@ const reservationStatusData = [
                   
                   {idx < 3 && (
                     <div className="flex items-center">
-                      {idx === 0 && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
+                      {idx === 0 && <Star className="w-4 h-4 text-green-500 fill-current" />}
                       {idx === 1 && <Award className="w-4 h-4 text-gray-500" />}
-                      {idx === 2 && <Target className="w-4 h-4 text-orange-500" />}
+                      {idx === 2 && <Target className="w-4 h-4 text-green-500" />}
                     </div>
                   )}
                 </div>
@@ -542,7 +525,7 @@ const reservationStatusData = [
 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-gray-600">En attente</span>
-                    <span className="font-semibold text-yellow-600">{offre.enAttente}</span>
+                    <span className="font-semibold text-green-600">{offre.enAttente}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
@@ -561,7 +544,7 @@ const reservationStatusData = [
                         const taux = Number(offre.tauxConfirmation);
                         const colorClass =
                           taux >= 80 ? 'text-green-600' :
-                          taux >= 60 ? 'text-yellow-600' :
+                          taux >= 60 ? 'text-green-600' :
                           'text-red-600';
                         return <span className={`text-xs font-bold ${colorClass}`}>{taux}%</span>;
                       })()}
@@ -574,7 +557,7 @@ const reservationStatusData = [
                         Number(offre.tauxConfirmation) >= 80
                           ? 'bg-gradient-to-r from-green-400 to-green-600'
                           : Number(offre.tauxConfirmation) >= 60
-                          ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+                          ? 'bg-gradient-to-r from-green-300 to-green-500'
                           : 'bg-gradient-to-r from-red-400 to-red-600'
                       }`}
                       style={{ width: `${Number(offre.tauxConfirmation)}%` }}
@@ -642,9 +625,9 @@ const reservationStatusData = [
             </h2>
             
             <div className="space-y-4">
-              {reservations.slice(0, 5).map((reservation, idx) => (
+              {reservations.slice(0, 5).map((reservation, _idx) => (
                 <div key={reservation.id} className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className={`w-3 h-3 rounded-full mr-4 ${reservation.statut ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                  <div className={`w-3 h-3 rounded-full mr-4 ${reservation.statut ? 'bg-green-500' : 'bg-green-500'}`}></div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800 truncate">
                       {reservation.utilisateur.email} - {reservation.offre.titreOffre}
@@ -656,14 +639,14 @@ const reservationStatusData = [
                   <div 
                     className={`w-3 h-3 rounded-full mr-4 
                       ${getStatutAffiche(reservation) === "CONFIRMEE" ? 'bg-green-500' :
-                        getStatutAffiche(reservation) === "EN_ATTENTE" ? 'bg-yellow-500' :
+                        getStatutAffiche(reservation) === "EN_ATTENTE" ? 'bg-green-500' :
                         'bg-red-500'}`}>
                   </div>
 
                   <div className="text-right">
                     <div className={`text-xs ${
                       getStatutAffiche(reservation) === "CONFIRMEE" ? 'text-green-600' :
-                      getStatutAffiche(reservation) === "EN_ATTENTE" ? 'text-yellow-600' :
+                      getStatutAffiche(reservation) === "EN_ATTENTE" ? 'text-green-600' :
                       'text-red-600'
                     }`}>
                       {getStatutAffiche(reservation) === "CONFIRMEE" ? 'Confirmée' :

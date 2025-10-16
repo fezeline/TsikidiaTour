@@ -2,28 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { 
-  Gift, 
-  Calendar, 
-  Star, 
-  MessageSquare, 
-  ChevronRight,
+  Gift,
+  Calendar,
+  Star,
   TrendingUp,
-  Award,
-  Filter,
-  Download,
   Search,
-  Mail,
   MapPin,
-  Clock,
   User,
   CheckCircle,
-  XCircle,
-  CreditCard,
-  Zap,
   Car
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import axios from 'axios';
 
 interface Reservation {
@@ -79,7 +69,7 @@ const ClientDashboard: React.FC = () => {
   const [voitures, setVoitures] = useState<Voiture[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'date' | 'destination'>('date');
+  const [sortBy] = useState<'date' | 'destination'>('date');
 
   useEffect(() => {
     if (!user) return;
@@ -152,27 +142,6 @@ const ClientDashboard: React.FC = () => {
     : "0.0";
 
   // Calculs basés sur les offres et voitures
-  const totalDepenses = reservations
-    .filter(r => getStatutAffiche(r) === "CONFIRMEE")
-    .reduce((sum, r) => sum + (r.montantTotal || r.offre?.prix || 0), 0);
-
-  const now = new Date();
-  const depensesMensuelles = reservations
-    .filter(r => {
-      const d = new Date(r.dateReservation);
-      return getStatutAffiche(r) === "CONFIRMEE" && 
-             d.getMonth() === now.getMonth() && 
-             d.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, r) => sum + (r.montantTotal || r.offre?.prix || 0), 0);
-
-  const depensesHebdo = reservations
-    .filter(r => {
-      const reservationDate = new Date(r.dateReservation);
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return getStatutAffiche(r) === "CONFIRMEE" && reservationDate >= weekAgo;
-    })
-    .reduce((sum, r) => sum + (r.montantTotal || r.offre?.prix || 0), 0);
 
   const tauxConfirmation = reservations.length > 0 ? 
     ((reservationsConfirmees / reservations.length) * 100).toFixed(1) : "0.0";
@@ -204,18 +173,6 @@ const ClientDashboard: React.FC = () => {
   });
 
   // Données pour les graphiques
-  const depensesParMois = Array.from({ length: 12 }, (_, i) => ({
-    mois: new Date(0, i).toLocaleString("fr", { month: "short" }),
-    total: reservations
-      .filter(r => {
-        const d = new Date(r.dateReservation);
-        return getStatutAffiche(r) === "CONFIRMEE" && d.getMonth() === i;
-      })
-      .reduce((sum, r) => sum + (r.montantTotal || r.offre?.prix || 0), 0),
-    reservations: reservations
-      .filter(r => new Date(r.dateReservation).getMonth() === i)
-      .length
-  }));
 
   const reservationStatusData = [
     { name: "Confirmées", value: reservationsConfirmees, color: "#10b981" },
@@ -223,10 +180,7 @@ const ClientDashboard: React.FC = () => {
     { name: "Annulées", value: reservationsAnnulees, color: "#ef4444" }
   ];
 
-  const voitureStatusData = [
-    { name: "Disponibles", value: voituresDisponibles, color: "#10b981" },
-    { name: "Occupées", value: voituresOccupees, color: "#ef4444" }
-  ];
+  
 
   // Top offres populaires
   const topOffres = offres
@@ -282,45 +236,10 @@ const ClientDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 pb-12">
-      {/* En-tête */}
-      <div className="relative h-96 bg-gradient-to-br from-green-700 via-green-800 to-emerald-900 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
-        </div>
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{ backgroundImage: "url('/images/dashboardClient/grotte.jpg')" }}
-        ></div>
-        
-        <div className="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl mr-4">
-                  <User className="w-8 h-8 text-green-600" />
-                </div>
-                <div>
-                  <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
-                    Bonjour, {user.nom} !
-                  </h1>
-                  <p className="text-green-100 text-lg mt-2">Votre aventure continue ici 🌍</p>
-                </div>
-              </div>
-            </div>
-            
-            {reservationsEnAttente > 0 && (
-              <div className="bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
-                {reservationsEnAttente} réservation{reservationsEnAttente > 1 ? 's' : ''} en attente
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Navigation par onglets */}
       <div className="container mx-auto px-4 -mt-12 relative z-20">
-        <div className="bg-white rounded-2xl shadow-2xl p-2 flex gap-2 mb-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-2 flex gap-2 mb-8 mt-20">
           {[
               { id: 'overview', label: 'Aperçu', icon: TrendingUp },
               { id: 'reservations', label: 'Réservations', icon: Calendar, badge: reservations.length },
@@ -409,26 +328,24 @@ const ClientDashboard: React.FC = () => {
                 </div>
 
                 <div className="p-4 bg-gray-50 rounded-xl">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={reservationStatusData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        // CORRECTION : Gestion du percent qui peut être undefined
-                        label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {reservationStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={reservationStatusData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={90}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                        >
+                          {reservationStatusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
                 </div>
               </Card>
 

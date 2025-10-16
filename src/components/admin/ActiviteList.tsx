@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Edit2, Trash2, Calendar, MapPin, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Edit2, Trash2, Calendar, MapPin, X, AlertTriangle } from 'lucide-react';
 import { Activite } from '../../types';
 import axios from 'axios';
 
 interface ActiviteListProps {
   activites: Activite[];
   onEdit: (activite: Activite) => void;
-  onDelete: (id: number) => void; // suppression gérée par le parent
+  onDelete: (id: number) => void; 
 }
 
 const ActiviteList: React.FC<ActiviteListProps> = ({ onEdit, onDelete }) => {
@@ -35,7 +35,7 @@ const ActiviteList: React.FC<ActiviteListProps> = ({ onEdit, onDelete }) => {
       await axios.delete(`http://localhost:4005/activite/${activiteToDelete.id}`);
       setActivites(prev => prev.filter(a => a.id !== activiteToDelete.id));
       setShowConfirmDialog(false);
-      onDelete(activiteToDelete.id); // déclenche toast dans le parent
+      onDelete(activiteToDelete.id); 
       setActiviteToDelete(null);
     } catch (error) {
       console.error("Erreur lors de la suppression de l'activité:", error);
@@ -71,7 +71,7 @@ const ActiviteList: React.FC<ActiviteListProps> = ({ onEdit, onDelete }) => {
               <td className="px-6 py-4">{activite.descriptionActivite}</td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-indigo-500" />
+                  <Calendar className="w-4 h-4 text-green-600" />
                   <span>
                     {activite.dateActivite
                       ? new Date(activite.dateActivite).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
@@ -81,7 +81,7 @@ const ActiviteList: React.FC<ActiviteListProps> = ({ onEdit, onDelete }) => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-red-500" />
+                  <MapPin className="w-4 h-4 text-green-500" />
                   <span>{activite.lieuActivite}</span>
                 </div>
               </td>

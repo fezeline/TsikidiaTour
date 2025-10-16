@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit2, Trash2, CheckCircle, XCircle, RefreshCw, Download } from 'lucide-react';
+import { Trash2, CheckCircle, XCircle, RefreshCw, Download } from 'lucide-react';
 import axios from 'axios';
 import { Payement } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -126,7 +126,7 @@ doc.text("Facture de paiement de TsikiDia Tour", textX, textY);
   const getStatusClass = (status: string) => {
     switch (status) {
       case 'SUCCES': return 'bg-green-100 text-green-800';
-      case 'EN_ATTENTE': return 'bg-yellow-100 text-yellow-800';
+  case 'EN_ATTENTE': return 'bg-green-100 text-green-800';
       case 'ECHEC': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -184,7 +184,7 @@ doc.text("Facture de paiement de TsikiDia Tour", textX, textY);
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paiements.map(paiement => {
-              const paiementUserId = getPaiementUserId(paiement);
+              
               return (
                 <tr key={paiement.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{paiement.id}</td>
